@@ -1,6 +1,6 @@
 services:
   subs:
-    image: yshanchui/subs:20261023
+    image: yshanchui/subs:20261026
     restart: unless-stopped
     environment:
       SUBS_LISTEN: "0.0.0.0:8787"

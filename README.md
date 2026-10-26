@@ -22,11 +22,11 @@
 
 ## 快速开始
 
-默认部署方案适用于 Linux 服务器和 fnOS 等支持 Docker Compose 的 NAS。需要 Docker、Docker Compose、一个由 Cloudflare 管理 DNS 的域名，以及该域名的 API Token。只需本机体验时，可使用下文的[源码运行方式](#开发)。
+推荐使用 Docker Compose 部署。下方完整 HTTPS 方案需要 Docker、Docker Compose、一个由 Cloudflare 管理 DNS 的域名，以及该域名的 API Token。也可以[仅运行 Subs 容器](#docker-单容器部署)，接入已有反向代理。
 
 项目根目录包含 `compose.yaml`、`Caddyfile`、`Dockerfile.caddy` 和 `.env.example`。默认部署 Subs 与 Caddy，后台和订阅统一使用 `https://你的域名:8443`，证书通过 Cloudflare DNS-01 自动签发和续期。
 
-Subs 使用 [`yshanchui/subs:20261023`](https://hub.docker.com/r/yshanchui/subs)，支持 `linux/amd64` 和 `linux/arm64`；另提供 `latest`。Caddy 在 NAS 上按本机架构构建。
+Subs 使用 [`yshanchui/subs:20261026`](https://hub.docker.com/r/yshanchui/subs)，支持 `linux/amd64` 和 `linux/arm64`；另提供 `latest`。Caddy 通过 Docker Compose 按宿主机架构构建。
 
 ### 1. 准备配置
 
@@ -51,11 +51,11 @@ cp .env.example .env
 
 Cloudflare API Token 的资源范围应限定为目标 Zone，只填 Token 字符串，不带 `Bearer`。不要使用 Global API Key，也不要把 Token 写进 Caddyfile、Dockerfile 或构建参数。
 
-域名 A 记录指向公网 IPv4，路由器转发 **TCP 公网 8443 → NAS 8443**；如配置 AAAA，IPv6 访问路径也必须可达。DNS-01 签发不要求任何入站端口，但 NAS 需要能访问 Cloudflare API、ACME 服务和公共 DNS。
+域名 A 记录指向部署主机的公网 IPv4，并开放 **TCP 8443**；主机位于路由器后时，将公网 8443 转发到主机 8443。如配置 AAAA，IPv6 访问路径也必须可达。DNS-01 签发不要求任何入站端口，但部署环境需要能访问 Cloudflare API、ACME 服务和公共 DNS。
 
 ### 2. 启动
 
-在飞牛 Docker 中将项目目录设为仓库根目录，或在 NAS 的该目录执行：
+在项目根目录执行：
 
 ```sh
 docker compose config --quiet
@@ -90,6 +90,27 @@ docker compose up -d --no-deps subs
 
 生成器更新后，在「订阅集合」重新生成快照，再让客户端更新订阅。已有快照不会因镜像更新自动改写，无需重新拉取上游。
 
+### Docker 单容器部署
+
+如果只需要 Subs，或已有 HTTPS 反向代理，可以直接运行 Docker 镜像。创建私有文件 `.env.docker`，填写 12–72 字节的管理员密码：
+
+```dotenv
+SUBS_ADMIN_USER=admin
+SUBS_ADMIN_PASSWORD=
+```
+
+```sh
+docker run -d \
+  --name subs \
+  --restart unless-stopped \
+  --env-file .env.docker \
+  --publish 127.0.0.1:8787:8787 \
+  --mount type=volume,source=subs-data,target=/data \
+  yshanchui/subs:20261026
+```
+
+本机访问 `http://127.0.0.1:8787`。通过 HTTPS 反向代理对外提供服务时，在 `.env.docker` 中设置 `SUBS_PUBLIC_URL=https://你的域名:端口`，再重新创建容器。单容器部署无需 Cloudflare Token；`.env.docker` 已被 Git 和镜像构建上下文排除。
+
 ## 数据持久化与备份
 
 | Docker 卷 | 用途 |
@@ -98,7 +119,7 @@ docker compose up -d --no-deps subs
 | `subs-caddy-data` | ACME 账号、证书及续期状态 |
 | `subs-caddy-config` | Caddy 持久化配置 |
 
-Subs 容器以 UID/GID 10001 运行，使用 `/data`。需要绑定 NAS 目录时，将 `subs-data:/data` 改为 `./data:/data`，并确保 UID 10001 可读写。更新、重建或停止容器时保留卷，**不要执行 `docker compose down -v`**。
+Subs 容器以 UID/GID 10001 运行，使用 `/data`。需要绑定宿主机目录时，将 `subs-data:/data` 改为 `./data:/data`，并确保 UID 10001 可读写。更新、重建或停止容器时保留卷，**不要执行 `docker compose down -v`**。
 
 备份时先停止 Subs，再备份完整 `subs-data`；Caddy 证书卷也应备份。数据中包含订阅凭据，备份同样需要保密。迁移已有实例时，先停止原进程，再复制完整数据目录并修正所有者；不要只复制单个快照，也不要重新创建空卷覆盖原数据。三个卷名固定，迁移 Compose 项目目录时也应保留这些卷和自定义环境变量。
 
