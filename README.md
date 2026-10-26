@@ -24,7 +24,7 @@
 
 推荐使用 Docker Compose 部署。下方完整 HTTPS 方案需要 Docker、Docker Compose、一个由 Cloudflare 管理 DNS 的域名，以及该域名的 API Token。也可以[仅运行 Subs 容器](#docker-单容器部署)，接入已有反向代理。
 
-项目根目录包含 `compose.yaml`、`Caddyfile`、`Dockerfile.caddy` 和 `.env.example`。默认部署 Subs 与 Caddy，后台和订阅统一使用 `https://你的域名:8443`，证书通过 Cloudflare DNS-01 自动签发和续期。
+项目根目录包含 `compose.yaml`、`Caddyfile`、`Dockerfile.caddy` 和 `.env.example`。默认部署 Subs 与 Caddy，后台和订阅统一使用 `https://你的域名`，证书通过 Cloudflare DNS-01 自动签发和续期。
 
 Subs 使用 [`yshanchui/subs:20261026`](https://hub.docker.com/r/yshanchui/subs)，支持 `linux/amd64` 和 `linux/arm64`；另提供 `latest`。Caddy 通过 Docker Compose 按宿主机架构构建。
 
@@ -51,7 +51,7 @@ cp .env.example .env
 
 Cloudflare API Token 的资源范围应限定为目标 Zone，只填 Token 字符串，不带 `Bearer`。不要使用 Global API Key，也不要把 Token 写进 Caddyfile、Dockerfile 或构建参数。
 
-域名 A 记录指向部署主机的公网 IPv4，并开放 **TCP 8443**；主机位于路由器后时，将公网 8443 转发到主机 8443。如配置 AAAA，IPv6 访问路径也必须可达。DNS-01 签发不要求任何入站端口，但部署环境需要能访问 Cloudflare API、ACME 服务和公共 DNS。
+域名 A 记录指向部署主机的公网 IPv4，并开放 **TCP 443**；主机位于路由器后时，将公网 443 转发到主机 443。如配置 AAAA，IPv6 访问路径也必须可达。DNS-01 签发不要求任何入站端口，但部署环境需要能访问 Cloudflare API、ACME 服务和公共 DNS。
 
 ### 2. 启动
 
@@ -68,11 +68,11 @@ docker compose ps
 
 使用 `--quiet` 校验 Compose，避免输出解析后的密码和 Token。首次构建 Caddy 需要下载基础镜像与 Go 依赖。官方普通 Caddy 镜像不含 Cloudflare DNS 模块；本项目使用 Caddy 2.11.7 和 `caddy-dns/cloudflare@v0.2.4`，构建时检查 `dns.providers.cloudflare` 模块。
 
-Compose 只发布 `8443:443`，Subs 的 8787 仅在容器网络内使用。Caddy 显式关闭 HTTP-01、TLS-ALPN-01 和 HTTP 重定向，使用 DNS-01 管理证书。`SUBS_PUBLIC_URL` 自动设置为 `https://${SUBS_DOMAIN}:8443`，生成的订阅地址也包含 8443。
+Compose 默认只发布 `443:443`，Subs 的 8787 仅在容器网络内使用。Caddy 显式关闭 HTTP-01、TLS-ALPN-01 和 HTTP 重定向，使用 DNS-01 管理证书。`SUBS_PUBLIC_URL` 默认设置为 `https://${SUBS_DOMAIN}`，后台和订阅地址使用标准 HTTPS，无需显式填写端口。
 
 ### 3. 添加订阅
 
-1. 打开 `https://你的域名:8443/`，使用初始化的账号密码登录。
+1. 打开 `https://你的域名/`，使用初始化的账号密码登录。
 2. 在「订阅源」添加上游 URL，并更新一次；在「ACL 规则」确认规则已下载。
 3. 在「订阅集合」生成快照，复制目标客户端的链接。
 4. Clash Verge 使用 Mihomo 链接；Shadowrocket 分别导入节点订阅和规则配置链接。
@@ -109,7 +109,7 @@ docker run -d \
   yshanchui/subs:20261026
 ```
 
-本机访问 `http://127.0.0.1:8787`。通过 HTTPS 反向代理对外提供服务时，在 `.env.docker` 中设置 `SUBS_PUBLIC_URL=https://你的域名:端口`，再重新创建容器。单容器部署无需 Cloudflare Token；`.env.docker` 已被 Git 和镜像构建上下文排除。
+本机访问 `http://127.0.0.1:8787`。通过 HTTPS 反向代理对外提供服务时，在 `.env.docker` 中设置 `SUBS_PUBLIC_URL=https://你的域名`，再重新创建容器。单容器部署无需 Cloudflare Token；`.env.docker` 已被 Git 和镜像构建上下文排除。
 
 ## 数据持久化与备份
 
@@ -152,7 +152,7 @@ Mihomo 的默认网络配置：
 - DNS 监听 `127.0.0.1:7874`，使用 `198.18.0.1/16` Fake-IP，启用 `respect-rules` 和 hosts。
 - 普通域名与节点域名使用阿里、腾讯 DoH，`223.5.5.5` / `119.29.29.29` 用于解析 DoH 服务器本身。
 - 局域网、连通性检测、时间同步和 STUN 域名设有 Fake-IP 排除项。
-- HTTP（80、443、8080）与 TLS（443、8443）嗅探开启，不启用纯 IP 嗅探。
+- HTTP 与 TLS 嗅探开启，不启用纯 IP 嗅探。
 
 这些设置写在 YAML 顶层，不改变 ACL 分流规则及顺序，也不混入源订阅自带的 DNS、端口或策略。旧 Clash 和 Shadowrocket 沿用各自的输出行为。客户端全局设置或扩展配置可能覆盖订阅值，应检查实际运行配置；开启 DNS、嗅探不会自动接管所有应用流量。
 
@@ -198,7 +198,7 @@ SUBS_ADMIN_USER=admin SUBS_ADMIN_PASSWORD='新的至少12字符密码' go run . 
 | --- | --- |
 | `SUBS_LISTEN` | `127.0.0.1:8787`；容器中为 `0.0.0.0:8787` |
 | `SUBS_DATA_DIR` | `./data`；容器中为 `/data` |
-| `SUBS_PUBLIC_URL` | 默认取页面来源；Compose 固定为带 8443 的 HTTPS 域名 |
+| `SUBS_PUBLIC_URL` | 默认取页面来源；Compose 使用标准 HTTPS 域名，默认端口为 443 |
 | `SUBS_SECURE_COOKIE` | 默认 `false`；HTTPS PUBLIC_URL 自动启用，Compose 显式启用 |
 
 ```sh

@@ -7,7 +7,7 @@ services:
       SUBS_DATA_DIR: /data
       SUBS_ADMIN_USER: "${SUBS_ADMIN_USER:-admin}"
       SUBS_ADMIN_PASSWORD: "${SUBS_ADMIN_PASSWORD:?请在同目录 .env 中设置 12-72 字节的管理员密码}"
-      SUBS_PUBLIC_URL: "https://${SUBS_DOMAIN:?请在同目录 .env 中设置域名}:8443"
+      SUBS_PUBLIC_URL: "https://${SUBS_DOMAIN:?请在同目录 .env 中设置域名}"
       SUBS_SECURE_COOKIE: "true"
       SUBS_ALLOW_PRIVATE_UPSTREAM: "${SUBS_ALLOW_PRIVATE_UPSTREAM:-false}"
     volumes:
@@ -25,7 +25,7 @@ services:
       SUBS_DOMAIN: "${SUBS_DOMAIN:?请在同目录 .env 中设置域名}"
       CLOUDFLARE_API_TOKEN: "${CLOUDFLARE_API_TOKEN:?请在同目录 .env 中设置 Cloudflare DNS API Token}"
     ports:
-      - "8443:443"
+      - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
