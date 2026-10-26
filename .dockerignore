@@ -1,0 +1,13 @@
+**
+!Dockerfile
+!.dockerignore
+!go.mod
+!go.sum
+!*.go
+*_test.go
+!web/
+!web/**
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+!licenses/
+!licenses/**

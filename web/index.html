@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Subs · 订阅工作台</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div id="notice" role="status" aria-live="polite" hidden>
+      <span></span><button aria-label="关闭提示" id="closeNotice">×</button>
+    </div>
+    <main id="loginView" class="login-shell" hidden>
+      <section class="login-story">
+        <div class="wordmark">Subs<span>订阅工作台</span></div>
+        <div>
+          <h1>把订阅留在自己手里。</h1>
+          <p>
+            聚合、转换，再保存为本地快照。<br />上游关闭后，你的订阅地址依然可用。
+          </p>
+          <div class="login-flow">
+            <span>多个订阅源</span><i>→</i><strong>本地快照</strong><i>→</i
+            ><span>你的客户端</span>
+          </div>
+        </div>
+        <small>Go 服务 · 本地持久化 · ACL4SSR 规则</small>
+      </section>
+      <section class="login-form">
+        <form id="loginForm">
+          <div class="small-label">管理员登录</div>
+          <h2>进入工作台</h2>
+          <p>使用首次启动时设置的管理员账号。</p>
+          <label for="username">账号</label
+          ><input
+            id="username"
+            name="username"
+            autocomplete="username"
+            required
+            value="admin"
+            maxlength="80"
+          /><label for="password">密码</label
+          ><input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            maxlength="72"
+          />
+          <p class="form-error" id="loginError" role="alert"></p>
+          <button class="primary wide" type="submit">登录</button
+          ><small
+            >首次账号通过 SUBS_ADMIN_USER 与<br />SUBS_ADMIN_PASSWORD
+            配置。</small
+          >
+        </form>
+      </section>
+    </main>
+    <div id="workspace" hidden>
+      <aside class="sidebar">
+        <a class="wordmark" href="#overview">Subs<span>订阅工作台</span></a>
+        <nav aria-label="主导航">
+          <a href="#overview" data-page="overview">概览</a
+          ><a href="#sources" data-page="sources">订阅源</a
+          ><a href="#collections" data-page="collections">订阅集合</a
+          ><a href="#rules" data-page="rules">ACL 规则</a
+          ><a href="#settings" data-page="settings">系统设置</a>
+        </nav>
+        <div class="sidebar-bottom">
+          <span class="status-dot"></span>本地快照服务<button id="logout">
+            退出登录
+          </button>
+        </div>
+      </aside>
+      <main class="main">
+        <header class="page-header">
+          <div>
+            <p class="breadcrumb">Subs / <span id="breadcrumb">概览</span></p>
+            <h1 id="pageTitle">订阅概览</h1>
+            <p id="pageSubtitle">源可以暂时关闭，已经生成的订阅仍然可用。</p>
+          </div>
+          <button id="refreshAll" class="primary">更新源与规则</button>
+        </header>
+        <div id="taskBanner" class="task-banner" role="status" hidden>
+          正在下载并生成快照；现有订阅继续提供服务。
+        </div>
+        <div id="pageContent"></div>
+        <footer>
+          Subs · ACL4SSR 规则依据 CC BY-SA 4.0
+          使用。对外订阅只读取本地已发布文件。
+        </footer>
+      </main>
+    </div>
+    <dialog id="editor">
+      <form id="editorForm">
+        <div class="dialog-title">
+          <h2 id="editorTitle"></h2>
+          <button
+            type="button"
+            class="icon-button"
+            data-close
+            aria-label="关闭编辑"
+          >
+            ×
+          </button>
+        </div>
+        <div id="editorFields"></div>
+        <p class="form-error" id="editorError" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" data-close>取消</button
+          ><button class="primary" type="submit" id="editorSave">保存</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

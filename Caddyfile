@@ -1,0 +1,14 @@
+{
+    auto_https disable_redirects
+}
+
+{$SUBS_DOMAIN} {
+    tls {
+        issuer acme {
+            disable_http_challenge
+            disable_tlsalpn_challenge
+            dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        }
+    }
+    reverse_proxy subs:8787
+}
